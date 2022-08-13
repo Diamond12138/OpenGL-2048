@@ -40,6 +40,7 @@ private:
 	void *m_font;
 	unsigned int m_score;
 	std::array<unsigned int, 16> m_data;
+	bool m_show_lansuplst;
 
 public:
 	MyGame()
@@ -47,11 +48,13 @@ public:
 		m_font = GLUT_STROKE_ROMAN;
 		m_score = 0;
 		m_data = std::array<unsigned int, 16>();
+		m_show_lansuplst = false;
 		for (unsigned i = 0; i < m_data.size(); i++)
 		{
 			m_data.at(i) = SCORE_NONE;
 		}
 		srand(time(nullptr));
+		random_new();
 		random_new();
 		if (!initialization())
 			quit();
@@ -103,6 +106,19 @@ public:
 		}
 
 		draw_axis();
+	}
+
+	// language support list
+	void draw_layout_lansuplst()
+	{
+		glColor3f(0.0f, 0.0f, 0.0f);
+		draw_rect(glm::vec2(-0.51f, 0.51f), glm::vec2(1.02f, 1.02f));
+		glColor3f(1.0f, 1.0f, 1.0f);
+		draw_rect(glm::vec2(-0.5f, 0.5f), glm::vec2(1.0f, 1.0f));
+
+		glColor3f(0.0f, 0.0f, 0.0f);
+		draw_text(glm::vec2(-0.5f, 0.5f), "Language support list:");
+		draw_text(glm::vec2(-0.5f, 0.4f), "English");
 	}
 
 	void draw_text(glm::vec2 position, std::string text, float size = 5.0f)
@@ -216,7 +232,7 @@ public:
 	{
 		for (unsigned int i = 0; i < 16; i++)
 		{
-			if (m_data.at(i) != SCORE_NONE)
+			if (m_data.at(i) == SCORE_NONE)
 				return i;
 		}
 		return NOT_FOUND_NEW_POSITION;
@@ -240,20 +256,210 @@ public:
 
 	void random_new()
 	{
-		int a = random_new_pos();
-		if (a != NOT_FOUND_NEW_POSITION)
+		int index = random_new_pos();
+		if (index != NOT_FOUND_NEW_POSITION)
 		{
-			m_data.at(a) = 2;
-
-			int b = random_new_pos();
-			if (b != NOT_FOUND_NEW_POSITION)
-			{
-				m_data.at(b) = 2;
-			}
-
-			glutPostRedisplay();
-			std::cout << a << std::endl;
+			m_data.at(index) = 2;
 		}
+	}
+
+	void swap(unsigned int index1, unsigned int index2)
+	{
+		unsigned int temp = m_data.at(index1);
+		m_data.at(index1) = m_data.at(index2);
+		m_data.at(index2) = temp;
+	}
+
+	void up()
+	{
+		for (int y = 0; y < 4; y++)
+		{
+			for (int x = 0; x < 4; x++)
+			{
+				const unsigned int current_index = y * 4 + x;
+				const unsigned int current_score = m_data.at(current_index);
+
+				if (current_score == SCORE_NONE)
+				{
+					continue;
+				}
+
+				unsigned int top = 0;
+
+				if (y == top)
+				{
+					continue;
+				}
+				else
+				{
+					for (unsigned int i = y; i > top; i--)
+					{
+						const unsigned int next_index = (i - 1) * 4 + x;
+						if (next_index < 0)
+						{
+							continue;
+						}
+						const unsigned int next_score = m_data.at(next_index);
+						if (next_score == SCORE_NONE)
+						{
+							swap(current_index, next_index);
+						}
+						else if (next_score == current_score)
+						{
+							m_data.at(next_index) *= 2;
+							m_data.at(current_index) = SCORE_NONE;
+							m_score += m_data.at(next_index);
+						}
+					}
+				}
+			}
+		}
+		random_new();
+		glutPostRedisplay();
+	}
+
+	void down()
+	{
+		for (int y = 3; y >= 0; y--)
+		{
+			for (int x = 0; x < 4; x++)
+			{
+				const unsigned int current_index = y * 4 + x;
+				const unsigned int current_score = m_data.at(current_index);
+
+				if (current_score == SCORE_NONE)
+				{
+					continue;
+				}
+
+				unsigned int top = 3;
+
+				if (y == top)
+				{
+					continue;
+				}
+				else
+				{
+					for (unsigned int i = y; i < top; i++)
+					{
+						const unsigned int next_index = (i + 1) * 4 + x;
+						if (next_index > 15)
+						{
+							continue;
+						}
+						const unsigned int next_score = m_data.at(next_index);
+						if (next_score == SCORE_NONE)
+						{
+							swap(current_index, next_index);
+						}
+						else if (next_score == current_score)
+						{
+							m_data.at(next_index) *= 2;
+							m_data.at(current_index) = SCORE_NONE;
+							m_score += m_data.at(next_index);
+						}
+					}
+				}
+			}
+		}
+		random_new();
+		glutPostRedisplay();
+	}
+
+	void left()
+	{
+		for (int y = 0; y < 4; y++)
+		{
+			for (int x = 0; x < 4; x++)
+			{
+				const unsigned int current_index = y * 4 + x;
+				const unsigned int current_score = m_data.at(current_index);
+
+				if (current_score == SCORE_NONE)
+				{
+					continue;
+				}
+
+				unsigned int top = 0;
+
+				if (x == top)
+				{
+					continue;
+				}
+				else
+				{
+					for (unsigned int i = x; i > top; i--)
+					{
+						const unsigned int next_index = y * 4 + (i - 1);
+						if (next_index < 0)
+						{
+							continue;
+						}
+						const unsigned int next_score = m_data.at(next_index);
+						if (next_score == SCORE_NONE)
+						{
+							swap(current_index, next_index);
+						}
+						else if (next_score == current_score)
+						{
+							m_data.at(next_index) *= 2;
+							m_data.at(current_index) = SCORE_NONE;
+							m_score += m_data.at(next_index);
+						}
+					}
+				}
+			}
+		}
+		random_new();
+		glutPostRedisplay();
+	}
+
+	void right()
+	{
+		for (int y = 0; y < 4; y++)
+		{
+			for (int x = 3; x >= 0; x--)
+			{
+				const unsigned int current_index = y * 4 + x;
+				const unsigned int current_score = m_data.at(current_index);
+
+				if (current_score == SCORE_NONE)
+				{
+					continue;
+				}
+
+				unsigned int top = 3;
+
+				if (x == top)
+				{
+					continue;
+				}
+				else
+				{
+					for (unsigned int i = x; i < top; i++)
+					{
+						const unsigned int next_index = y * 4 + (i + 1);
+						if (next_index > 15)
+						{
+							continue;
+						}
+						const unsigned int next_score = m_data.at(next_index);
+						if (next_score == SCORE_NONE)
+						{
+							swap(current_index, next_index);
+						}
+						else if (next_score == current_score)
+						{
+							m_data.at(next_index) *= 2;
+							m_data.at(current_index) = SCORE_NONE;
+							m_score += m_data.at(next_index);
+						}
+					}
+				}
+			}
+		}
+		random_new();
+		glutPostRedisplay();
 	}
 
 public:
@@ -275,6 +481,8 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		draw_layout_game();
+		if (m_show_lansuplst)
+			draw_layout_lansuplst();
 
 		glutSwapBuffers();
 	}
@@ -286,13 +494,40 @@ public:
 		case 27:
 			quit();
 			break;
+		case 'l':
+		case 'L':
+			m_show_lansuplst = !m_show_lansuplst;
+			break;
+		case 'q':
+		case 'Q':
+			m_show_lansuplst = false;
+			break;
 		default:
 			break;
 		}
+		glutPostRedisplay();
 	}
 
 	virtual void special(int key, int x, int y)
 	{
+		switch (key)
+		{
+		case GLUT_KEY_UP:
+			up();
+			break;
+		case GLUT_KEY_DOWN:
+			down();
+			break;
+		case GLUT_KEY_LEFT:
+			left();
+			break;
+		case GLUT_KEY_RIGHT:
+			right();
+			break;
+
+		default:
+			break;
+		}
 	}
 
 	virtual void reshape(int width, int height)
